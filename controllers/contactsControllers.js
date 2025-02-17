@@ -17,7 +17,7 @@ export const getOneContact = async (req, res, next) => {
     const contact = await contactsService.getContactById(id);
 
     if (!contact) {
-      throw HttpError(404, "Not found");
+      return res.status(404).json({ message: "Not found" });
     }
 
     res.status(200).json(contact);
@@ -45,7 +45,7 @@ export const createContact = async (req, res, next) => {
   try {
     const { error } = createContactSchema.validate(req.body);
     if (error) {
-      throw HttpError(400, error.message);
+      return res.status(400).json({ message: error.message }); 
     }
 
     const newContact = await contactsService.addContact(req.body);

@@ -1,11 +1,5 @@
 [
   {
-    "id": "qdggE76Jtbfd9eWJHrssH",
-    "name": "Chaim Lewis",
-    "email": "dui.in@egetlacus.ca",
-    "phone": "(294) 840-6685"
-  },
-  {
     "id": "drsAJ4SHPYqZeG-83QTVW",
     "name": "Kennedy Lane",
     "email": "mattis.Cras@nonenimMauris.net",
@@ -55,6 +49,12 @@
   },
   {
     "id": "01HP701aSrFnncu6Ltb2X",
+    "name": "John Doe",
+    "email": "johndoe@example.com",
+    "phone": "+380991234567"
+  },
+  {
+    "id": "LnwNhkYP740baaJ4Hkt7P",
     "name": "John Doe",
     "email": "johndoe@example.com",
     "phone": "+380991234567"
