@@ -1,54 +1,39 @@
-import fs from "fs/promises";
-import { nanoid } from "nanoid";
-
-const contactsPath = "./db/contacts.json";
+import User from "../db/models/User.js";
 
 const listContacts = async () => {
-  const data = await fs.readFile(contactsPath, "utf-8");
-  return JSON.parse(data);
+  return await User.findAll();
 };
 
 const getContactById = async (id) => {
-  const contacts = await listContacts();
-  return contacts.find((contact) => contact.id === id) || null;
+  return await User.findByPk(id);
 };
 
-const addContact = async ({ name, email, phone }) => {
-  const contacts = await listContacts();
-  const newContact = { id: nanoid(), name, email, phone };
-  
-  contacts.push(newContact);
-  await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
-
-  return newContact;
+const addContact = async (data) => {
+  return await User.create(data);
 };
 
 const removeContact = async (id) => {
-  let contacts = await listContacts();
-  const index = contacts.findIndex((contact) => contact.id === id);
-
-  if (index === -1) {
-    return null;
-  }
-
-  const [deletedContact] = contacts.splice(index, 1);
-  await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
-
-  return deletedContact;
+  const contact = await User.findByPk(id);
+  if (!contact) return null;
+  
+  await contact.destroy();
+  return contact;
 };
 
-const updateContact = async (id, body) => {
-  let contacts = await listContacts();
-  const index = contacts.findIndex((contact) => contact.id === id);
+const updateContact = async (id, data) => {
+  const contact = await User.findByPk(id);
+  if (!contact) return null;
 
-  if (index === -1) {
-    return null;
-  }
+  await contact.update(data);
+  return contact;
+};
 
-  contacts[index] = { ...contacts[index], ...body };
-  await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
+const updateStatusContact = async (id, { favorite }) => {
+  const contact = await User.findByPk(id);
+  if (!contact) return null;
 
-  return contacts[index];
+  await contact.update({ favorite });
+  return contact;
 };
 
 export default {
@@ -57,4 +42,5 @@ export default {
   addContact,
   removeContact,
   updateContact,
+  updateStatusContact,
 };
