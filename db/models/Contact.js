@@ -23,7 +23,7 @@ const Contact = sequelize.define("Contact", {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: "Users", 
+      model: User, 
       key: "id",
     },
     onDelete: "CASCADE",
@@ -31,5 +31,8 @@ const Contact = sequelize.define("Contact", {
 }, {
   timestamps: true,
 });
+
+User.hasMany(Contact, { foreignKey: "owner", as: "contacts" });
+Contact.belongsTo(User, { foreignKey: "owner", as: "user" });
 
 export default Contact;
