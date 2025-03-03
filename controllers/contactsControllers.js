@@ -4,7 +4,7 @@ import { createContactSchema, updateContactSchema, updateFavoriteSchema } from "
 
 export const getAllContacts = async (req, res, next) => {
   try {
-    const contacts = await contactsService.listContacts();
+    const contacts = await contactsService.listContacts(req.user.id); 
     res.status(200).json(contacts);
   } catch (error) {
     next(error);
@@ -14,7 +14,7 @@ export const getAllContacts = async (req, res, next) => {
 export const getOneContact = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const contact = await contactsService.getContactById(id);
+    const contact = await contactsService.getContactById(id, req.user.id);
 
     if (!contact) {
       throw HttpError(404, "Not found");
@@ -33,8 +33,7 @@ export const createContact = async (req, res, next) => {
       throw HttpError(400, error.message);
     }
 
-    const newContact = await contactsService.addContact(req.body);
-    res.status(201).json(newContact);
+    const newContact = await contactsService.addContact({ ...req.body, owner: req.user.id });
   } catch (error) {
     next(error);
   }
@@ -49,7 +48,7 @@ export const updateContact = async (req, res, next) => {
       throw HttpError(400, error.message);
     }
 
-    const updatedContact = await contactsService.updateContact(id, req.body);
+    const updatedContact = await contactsService.updateContact(id, req.user.id, req.body);
     if (!updatedContact) {
       throw HttpError(404, "Not found");
     }
@@ -69,7 +68,7 @@ export const updateFavoriteStatus = async (req, res, next) => {
       throw HttpError(400, error.message);
     }
 
-    const updatedContact = await contactsService.updateStatusContact(id, req.body);
+    const updatedContact = await contactsService.updateStatusContact(id, req.user.id, req.body);
     if (!updatedContact) {
       throw HttpError(404, "Not found");
     }
@@ -83,7 +82,7 @@ export const updateFavoriteStatus = async (req, res, next) => {
 export const deleteContact = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const deletedContact = await contactsService.removeContact(id);
+    const deletedContact = await contactsService.removeContact(id, req.user.id);
 
     if (!deletedContact) {
       throw HttpError(404, "Not found");

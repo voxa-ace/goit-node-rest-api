@@ -80,3 +80,15 @@ export const getCurrentUser = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getAllUsers = async (req, res, next) => {
+  try {
+    const users = await User.findAll({
+      attributes: ["id", "email", "subscription"], 
+    });
+
+    res.status(200).json(users);
+  } catch (error) {
+    next(HttpError(500, "Server error"));
+  }
+};
