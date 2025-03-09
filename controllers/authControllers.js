@@ -1,33 +1,37 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import gravatar from "gravatar";
+import fs from "fs/promises";
+import path from "path";
 import User from "../db/models/User.js";
 import HttpError from "../helpers/HttpError.js";
-import { registerSchema, loginSchema } from "../schemas/authSchemas.js";
 
 const { JWT_SECRET } = process.env;
+const avatarsDir = path.join("public", "avatars");
 
 if (!JWT_SECRET) {
   console.error("JWT_SECRET is missing! Add it to the .env file.");
   process.exit(1);
 }
 
+// User registration
 export const register = async (req, res, next) => {
   try {
-    const { error } = registerSchema.validate(req.body);
-    if (error) throw HttpError(400, error.message);
-
     const { email, password } = req.body;
 
     const userExists = await User.findOne({ where: { email } });
     if (userExists) throw HttpError(409, "Email in use");
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await User.create({ email, password: hashedPassword });
+    const avatarURL = gravatar.url(email, { s: "250", d: "retro" }, true);
+
+    const newUser = await User.create({ email, password: hashedPassword, avatarURL });
 
     res.status(201).json({
       user: {
         email: newUser.email,
         subscription: newUser.subscription,
+        avatarURL: newUser.avatarURL,
       },
     });
   } catch (error) {
@@ -35,11 +39,9 @@ export const register = async (req, res, next) => {
   }
 };
 
+// User login
 export const login = async (req, res, next) => {
   try {
-    const { error } = loginSchema.validate(req.body);
-    if (error) throw HttpError(400, error.message);
-
     const { email, password } = req.body;
 
     const user = await User.findOne({ where: { email } });
@@ -48,18 +50,19 @@ export const login = async (req, res, next) => {
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) throw HttpError(401, "Email or password is wrong");
 
-    try {
-      const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "1h" });
-      await user.update({ token });
-      res.status(200).json({ token, user: { email: user.email, subscription: user.subscription } });
-    } catch (error) {
-      throw HttpError(500, "Error generating token");
-    }
+    const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "1h" });
+    await user.update({ token });
+
+    res.status(200).json({
+      token,
+      user: { email: user.email, subscription: user.subscription, avatarURL: user.avatarURL },
+    });
   } catch (error) {
     next(error);
   }
 };
 
+// User logout
 export const logout = async (req, res, next) => {
   try {
     if (!req.user) throw HttpError(401, "Not authorized");
@@ -71,24 +74,49 @@ export const logout = async (req, res, next) => {
   }
 };
 
+// Get current user
 export const getCurrentUser = async (req, res, next) => {
   try {
     if (!req.user) throw HttpError(401, "Not authorized");
 
-    res.status(200).json({ email: req.user.email, subscription: req.user.subscription });
+    res.status(200).json({
+      email: req.user.email,
+      subscription: req.user.subscription,
+      avatarURL: req.user.avatarURL,
+    });
   } catch (error) {
     next(error);
   }
 };
 
-export const getAllUsers = async (req, res, next) => {
+// Update avatar
+export const updateAvatar = async (req, res, next) => {
   try {
-    const users = await User.findAll({
-      attributes: ["id", "email", "subscription"], 
-    });
+    if (!req.file) throw HttpError(400, "File not provided");
 
-    res.status(200).json(users);
+    const { path: tempPath, filename } = req.file;
+    const fileExtension = path.extname(filename);
+    const uniqueFilename = `${req.user.id}-${Date.now()}${fileExtension}`;
+    const newPath = path.join(avatarsDir, uniqueFilename);
+
+    // Delete old avatar if exists
+    if (req.user.avatarURL) {
+      const oldAvatarPath = path.join(avatarsDir, path.basename(req.user.avatarURL));
+      try {
+        await fs.unlink(oldAvatarPath);
+      } catch (err) {
+        console.warn("Old avatar not found or already deleted.");
+      }
+    }
+
+    // Move new avatar to the avatars directory
+    await fs.rename(tempPath, newPath);
+
+    const avatarURL = `/avatars/${uniqueFilename}`;
+    await req.user.update({ avatarURL });
+
+    res.status(200).json({ avatarURL });
   } catch (error) {
-    next(HttpError(500, "Server error"));
+    next(error);
   }
 };
