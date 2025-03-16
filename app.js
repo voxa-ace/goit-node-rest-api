@@ -38,4 +38,3 @@ sequelize.sync({ alter: true })
     });
   })
   .catch(console.error);
-
