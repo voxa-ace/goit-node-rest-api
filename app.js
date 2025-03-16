@@ -31,10 +31,11 @@ app.use((err, req, res, next) => {
   res.status(status).json({ message });
 });
 
-sequelize.sync({ force: false })
+sequelize.sync({ alter: true })
   .then(() => {
     app.listen(3000, () => {
       console.log("Server is running on port 3000");
     });
   })
   .catch(console.error);
+
